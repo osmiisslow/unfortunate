@@ -1,15 +1,14 @@
 use std::io::Read;
 use curl::easy::Easy;
-use whoami::{fallible::hostname, *};
-
+use whoami::fallible::*;
 pub fn add_quote(quote: &String) {
-    let user = username();
+    let user = username().unwrap();
     let host = hostname().unwrap();
     let format = format!("{user}@{host}: \"{quote}\"");
     let mut data = format.as_bytes();
     
     let mut easy = Easy::new();
-    easy.url("localhost:8080").unwrap();
+    easy.url("localhost:8080").unwrap(); // TODO: For the love of god change this after we're finished with server work
     easy.post(true).unwrap();
     easy.post_field_size(data.len() as u64).unwrap();
 
