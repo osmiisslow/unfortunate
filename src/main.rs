@@ -1,8 +1,10 @@
 mod server;
-mod client;
+mod add_quote;
 
 use server::*;
+use add_quote::*;
 use clap::{Parser, Subcommand};
+use color_eyre::eyre::Result;
 
 #[derive(Parser)]
 #[command(name="unfortunate")]
@@ -27,21 +29,27 @@ enum Commands {
 }
 
 
-fn main() {
+fn main() -> Result<()> {
+    // set up more readable error handling 
+    color_eyre::install()?;
+
+
     let cli = Cli::parse();
 
     match &cli.command {
         Some(Commands::Server { port}) => {
                 match port {
-                    Some(port) => server(port.parse().unwrap()),
-                    None => server(8080),
+                    Some(port) => start_server(port.parse().expect("not a valid port!")),
+                    None => start_server(8080),
                 }
             },
         Some(Commands::Add { quote }) => {
-            println!("add {quote}");
+            add_quote(quote);
         }
         None => {
             println!("hai :3");
         }
     }
+
+    Ok(())
 }

@@ -22,7 +22,7 @@ fn handle_connection(mut stream: TcpStream) {
     stream.write_all(response.as_bytes()).unwrap();
 }
 
-pub fn server(port: i32) {
+pub fn start_server(port: i32) {
     println!("hosting server on port :{port}");
     let addr = format!("127.0.0.1:{port}");
     let listener = TcpListener::bind(addr).unwrap();
@@ -32,5 +32,4 @@ pub fn server(port: i32) {
 
         handle_connection(stream);
     }
-    println!("hello from server! :3");
 }
