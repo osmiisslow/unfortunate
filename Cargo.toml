@@ -7,4 +7,5 @@ edition = "2024"
 clap = { version = "4.5.40", features = ["derive"] }
 color-eyre = "0.6.5"
 curl = "0.4.48"
+rand = "0.9.1"
 whoami = "1.6.0"
