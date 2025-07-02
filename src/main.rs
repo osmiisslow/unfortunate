@@ -1,8 +1,10 @@
 mod server;
 mod add_quote;
+mod get_quote;
 
 use server::*;
 use add_quote::*;
+use get_quote::*;
 use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
 
@@ -47,7 +49,7 @@ fn main() -> Result<()> {
             add_quote(quote);
         }
         None => {
-            println!("hai :3");
+            get_quote();
         }
     }
 
