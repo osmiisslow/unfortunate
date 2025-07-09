@@ -1,6 +1,7 @@
 mod server;
 mod add_quote;
 mod get_quote;
+mod http_request;
 
 use server::*;
 use add_quote::*;
