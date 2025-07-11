@@ -5,9 +5,10 @@ use std::{
     path::Path,
 };
 
+use curl::easy::HttpVersion;
 use rand::seq::IteratorRandom;
 
-use crate::http_request::HttpRequest;
+use crate::http_request::*;
 
 fn get_quote(path: &Path) -> String {
     let file = File::open(path).unwrap();
@@ -52,42 +53,49 @@ fn handle_connection(mut stream: TcpStream, quotes_path: &Path) {
 
     let request = HttpRequest::new(lines[0]);
 
-    let (status_line, contents) = match request.method {
-        "GET" => ("HTTP/1.1 200 OK", get_quote(quotes_path)),
-        "POST" => {
-            let mut quote = lines.last().unwrap().to_string();
-            quote.push('\n');
-            add_quote_to_file(quotes_path, quote.as_bytes());
-            ("HTTP/1.1 201 Created", format!("added {quote}"))
+    let response = match request.method {
+        HttpMethod::GET => {
+            HttpResponse::new(request.version, HttpStatus::OK).with_body(get_quote(quotes_path))
         }
-        _ => (
-            "HTTP/1.1 501 Not Implemented",
-            String::from("Failed to process request"),
-        ),
+        HttpMethod::POST => {
+            let mut success = true;
+            let quote = lines.last();
+            let mut quote = match quote {
+                Some(quote) => quote.to_string(),
+                None => {
+                    success = false;
+                    "fail :3".to_string()
+                }
+            };
+
+            if !success {
+                HttpResponse::new(request.version, HttpStatus::INTERNAL_SERVER_ERROR)
+                    .with_body("couldn't add quote... sorry! -w-''".to_string())
+            } else {
+                quote.push('\n');
+                add_quote_to_file(quotes_path, quote.as_bytes());
+                HttpResponse::new(request.version, HttpStatus::CREATED)
+                    .with_body(format!("added {quote}"))
+            }
+        }
+        _ => HttpResponse::new(request.version, HttpStatus::NOT_IMPLEMENTED)
+            .with_body("not able to process request qwq".to_string()),
     };
 
-    let (status_line, contents) = match request.path {
-        "/" => (status_line, contents),
-        _ => (
-            "HTTP/1.1 404 Not Found",
-            String::from("uh oh! not found! :3"),
-        ),
+    let response = match request.path {
+        "/" => response,
+        _ => HttpResponse::new(request.version, HttpStatus::NOT_FOUND)
+            .with_body("not found :3".to_string()),
     };
 
-    let (status_line, contents) = match request.version {
-        "HTTP/1.1" => (status_line, contents),
-        _ => (
-            "HTTP/1.1 505 HTTP Version Not Supported",
-            String::from("bad HTTP version :c"),
-        ),
+    let response = match request.version {
+        "HTTP/1.1" => response,
+        _ => HttpResponse::new(request.version, HttpStatus::HTTP_VERSION_NOT_SUPPORTED)
+            .with_body("bad http version :c".to_string()),
     };
-
-    let length = contents.len();
-
-    let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
 
     stream
-        .write_all(response.as_bytes())
+        .write_all(response.response_as_bytes())
         .unwrap_or_else(|e| eprintln!("unable to send response: {e}"));
 }
 
